@@ -12,24 +12,24 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import logging
 import sys
 import threading
-import logging
 
 from six.moves import queue
 
-from .service import ReportPortalService
 from .errors import Error
+from .service import ReportPortalService
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-class QueueListener(object):
+class QueueListener:
     _sentinel_item = None
 
-    def __init__(self, queue, *handlers, **kwargs):
-        self.queue = queue
+    def __init__(self, queue_, *handlers, **kwargs):
+        self.queue = queue_
         self.queue_get_timeout = kwargs.get("queue_get_timeout", None)
         self.handlers = handlers
         self._stop_nowait = threading.Event()
@@ -50,7 +50,8 @@ class QueueListener(object):
         t.setDaemon(True)
         t.start()
 
-    def prepare(self, record):
+    @staticmethod
+    def prepare(record):
         """Prepare a record for handling.
 
         This method just returns the passed-in record. You may want to
@@ -134,7 +135,7 @@ class ReportPortalServiceAsync(object):
     def __init__(self, endpoint, project, token, api_base="api/v1",
                  error_handler=None, log_batch_size=20,
                  is_skipped_an_issue=True,
-                 verify_ssl=True, queue_get_timeout=5, retries=None):
+                 verify_ssl=True, queue_get_timeout=20, retries=None):
         """Init the service class.
 
         Args:
@@ -162,8 +163,7 @@ class ReportPortalServiceAsync(object):
                                   "start_test_item", "finish_test_item", "log"]
 
         self.queue = queue.Queue()
-        self.listener = QueueListener(self.queue, self.process_item,
-                                      queue_get_timeout=queue_get_timeout)
+        self.listener = QueueListener(self.queue, self.process_item, queue_get_timeout=queue_get_timeout)
         self.listener.start()
         self.lock = threading.Lock()
 

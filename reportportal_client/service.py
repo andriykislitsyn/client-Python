@@ -13,8 +13,10 @@
 #  limitations under the License.
 
 
-import collections
+import collections.abc as collections
 import json
+from typing import List, Dict, Any
+
 import requests
 import uuid
 import logging
@@ -252,34 +254,19 @@ class ReportPortalService(object):
             logger.debug("log - Stack: %s", self.stack)
             return _get_id(r)
 
-    def log_batch(self, log_data):
-        """Logs batch of messages with attachment.
-
-        Args:
-            log_data: list of log records.
-            log record is a dict of;
-                time, message, level, attachment
-                attachment is a dict of:
-                    name: name of attachment
-                    data: fileobj or content
-                    mime: content type for attachment
-
-        """
+    def log_batch(self, log_data: List[Dict[str, Any]]):
+        """Log batch of messages with attachment."""
 
         url = uri_join(self.base_url, "log")
-
         attachments = []
         for log_item in log_data:
             log_item["item_id"] = self.stack[-1]
             attachment = log_item.get("attachment", None)
-
             if "attachment" in log_item:
                 del log_item["attachment"]
-
             if attachment:
                 if not isinstance(attachment, collections.Mapping):
                     attachment = {"data": attachment}
-
                 name = attachment.get("name", str(uuid.uuid4()))
                 log_item["file"] = {"name": name}
                 attachments.append(("file", (
@@ -297,6 +284,7 @@ class ReportPortalService(object):
         )]
         files.extend(attachments)
         from reportportal_client import POST_LOGBATCH_RETRY_COUNT
+        data = None
         for i in range(POST_LOGBATCH_RETRY_COUNT):
             try:
                 r = self.session.post(
@@ -304,6 +292,8 @@ class ReportPortalService(object):
                     files=files,
                     verify=self.verify_ssl
                 )
+                logger.debug("log_batch response: %s", r.text)
+                data = _get_data(r)
             except KeyError:
                 if i < POST_LOGBATCH_RETRY_COUNT - 1:
                     continue
@@ -311,7 +301,6 @@ class ReportPortalService(object):
                     raise
             break
 
+        logger.debug("log_batch response: None")
         logger.debug("log_batch - Stack: %s", self.stack)
-        logger.debug("log_batch response: %s", r.text)
-
-        return _get_data(r)
+        return data
