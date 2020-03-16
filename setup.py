@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '2019.08.23'
+__version__ = '2020.03.16'
 
 setup(
     name='reportportal-client',

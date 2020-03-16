@@ -197,7 +197,7 @@ class ReportPortalServiceAsync(object):
                 self.listener = None
 
     def _post_log_batch(self):
-        logger.debug("Posting log batch size: %s", len(self.log_batch))
+        # logger.debug("Posting log batch size: %s", len(self.log_batch))
         if self.log_batch:
             try:
                 self.rp_client.log_batch(self.log_batch)
@@ -209,7 +209,7 @@ class ReportPortalServiceAsync(object):
 
         Accumulate incoming log messages and post them in batch.
         """
-        logger.debug("Processing log item: %s", log_item)
+        # logger.debug("Processing log item: %s", log_item)
         self.log_batch.append(log_item)
         if len(self.log_batch) >= self.log_batch_size:
             self._post_log_batch()
@@ -219,8 +219,7 @@ class ReportPortalServiceAsync(object):
 
         Called by queue listener.
         """
-        logger.debug("Processing item: %s (queue size: %s)", item,
-                     self.queue.qsize())
+        # logger.debug("Processing item: %s (queue size: %s)", item, self.queue.qsize())
         method, kwargs = item
 
         if method not in self.supported_methods:
